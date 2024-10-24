@@ -1,5 +1,8 @@
+import os
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters import CommandStart, Command
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
 from PIL import Image
@@ -10,6 +13,8 @@ import qrcode
 import random
 
 from bot_answers import bot_answers
+from database import add_new_user, get_unverified
+
 bot_language = 'uk'
 
 BOT_NAME = 'LoyaltySystemPolitehTestBot'
@@ -31,6 +36,11 @@ database = {
     },
 }
 
+class Registration(StatesGroup):
+    name = State()
+    surname = State()
+    student_card = State()
+
 def generate_token() -> str:
     return ''.join([random.choice(KEY_CHARS) for chr in range(13)])
 
@@ -51,8 +61,42 @@ async def send_welcome(message: types.Message, command: CommandStart):
     await bot.send_message(chat_id=user_id, text=bot_answers[bot_language]['start-need-register'])
 
 @dp.message(Command("register"))
-async def register_new_user(message: types.Message):
-    ...
+async def register_new_user(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    await bot.send_message(chat_id=user_id, text="hi. whats your name?")
+    await state.set_state(Registration.name)
+
+@router.message(Registration.name)
+async def process_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await message.answer("Great! What is your surname?")
+    await state.set_state(Registration.surname)
+
+@router.message(Registration.surname)
+async def process_surname(message: types.Message, state: FSMContext):
+    await state.update_data(surname=message.text)
+    await message.answer("Please provide the path to your student card.")
+    await state.set_state(Registration.student_card)
+
+@router.message(Registration.student_card)
+async def process_student_card(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+
+    photoId = message.photo[-1].file_id
+
+    user_data = await state.get_data()
+    user_data["chat_id"] = user_id
+    user_data["studentCardPhotoId"] = photoId
+
+    print(user_data)
+    await add_new_user(user_data)
+
+    await message.answer("Thanks! You are now registered.")
+    await state.clear()
+
+@dp.message(Command("get_unverified"))
+async def get_unverified_users(message: types.Message):
+    await get_unverified()
 
 @dp.message(Command("image"))
 async def send_image(message: types.Message):

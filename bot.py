@@ -18,7 +18,7 @@ from database import add_new_user, get_unverified
 bot_language = 'uk'
 
 BOT_NAME = 'LoyaltySystemPolitehTestBot'
-API_TOKEN = '7733063051:AAFga3c0dHXRIgbs7Dw4RAjknnZ6CbVr_S0'
+API_TOKEN = 'create_another_bot_and_get_token'
 
 KEY_CHARS = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789-'
 
@@ -29,7 +29,7 @@ router = Router()
 dp = Dispatcher()
 dp.include_router(router)
 
-database = {
+database = { # temporary, need a connection with mysql
     "567826785": {
         "token": 0,
         "token_expired": True
